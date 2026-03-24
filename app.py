@@ -1,129 +1,111 @@
 import os
 from flask import Flask, render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime, timedelta
+from datetime import datetime
 
 app = Flask(__name__)
 
-# Configuración de Base de Datos (Usa SQLite por defecto)
-# En el futuro, aquí conectarás PostgreSQL para que no se borren los datos.
+# Configuración de Base de Datos
 basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'prode.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = 'mundial2026-secret'
 
 db = SQLAlchemy(app)
 
-# --- MODELOS DE DATOS ---
-
-class Usuario(db.Model):
+# --- MODELOS ---
+class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    nombre = db.Column(db.String(100), nullable=False)
-    puntos = db.Column(db.Integer, default=0)
-    exactos = db.Column(db.Integer, default=0)
-    dif_gol = db.Column(db.Integer, default=0)
+    username = db.Column(db.String(50), unique=True, nullable=False)
+    password = db.Column(db.String(50), nullable=False)
+    name = db.Column(db.String(100))
+    role = db.Column(db.String(10), default='user') # 'admin' o 'user'
+    points = db.Column(db.Integer, default=0)
 
-class Jugador(db.Model):
+class Match(db.Model):
+    id = db.Column(db.String(20), primary_key=True)
+    home = db.Column(db.String(50))
+    away = db.Column(db.String(50))
+    date = db.Column(db.DateTime)
+    phase = db.Column(db.String(20))
+    home_score = db.Column(db.Integer, nullable=True)
+    away_score = db.Column(db.Integer, nullable=True)
+
+class Player(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    nombre = db.Column(db.String(100))
-    seleccion = db.Column(db.String(50))
+    name = db.Column(db.String(100))
+    team = db.Column(db.String(50))
     dorsal = db.Column(db.Integer)
-    posicion = db.Column(db.String(20)) # arquero, defensor, mediocampista, delantero
 
-class Partido(db.Model):
+class Prediction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    equipo_a = db.Column(db.String(50))
-    equipo_b = db.Column(db.String(50))
-    fecha_hora = db.Column(db.DateTime)
-    fase = db.Column(db.String(20)) # grupos, 8vos, 4tos, semi, 3ro, final
-    goles_a_real = db.Column(db.Integer, nullable=True)
-    goles_b_real = db.Column(db.Integer, nullable=True)
-    quien_pasa_real = db.Column(db.String(50), nullable=True)
-
-class Prediccion(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('usuario.id'))
-    partido_id = db.Column(db.Integer, db.ForeignKey('partido.id'))
-    goles_a_p = db.Column(db.Integer)
-    goles_b_p = db.Column(db.Integer)
-    dorsal_elegido = db.Column(db.Integer)
-    quien_pasa_p = db.Column(db.String(50), nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    match_id = db.Column(db.String(20), db.ForeignKey('match.id'))
+    home_pred = db.Column(db.Integer)
+    away_pred = db.Column(db.Integer)
+    dorsal_pred = db.Column(db.Integer)
 
 # --- RUTAS ---
-
 @app.route('/')
 def index():
-    # Esta ruta busca el archivo dentro de la carpeta /templates
     return render_template('index.html')
 
-@app.route('/api/guardar', methods=['POST'])
-def guardar():
+@app.route('/api/login', methods=['POST'])
+def login():
     data = request.json
-    # Lógica de bloqueo de 5 minutos antes (Regla 2)
-    partido = Partido.query.get(data['partido_id'])
-    if datetime.now() > (partido.fecha_hora - timedelta(minutes=5)):
-        return jsonify({"error": "Carga bloqueada: faltan menos de 5 min"}), 403
+    user = User.query.filter_by(username=data['username'], password=data['password']).first()
+    if user:
+        return jsonify({"id": user.id, "name": user.name, "role": user.role})
+    return jsonify({"error": "Credenciales inválidas"}), 401
+
+@app.route('/api/matches', methods=['GET'])
+def get_matches():
+    matches = Match.query.all()
+    return jsonify([{
+        "id": m.id, "home": m.home, "away": m.away, 
+        "date": m.date.isoformat(), "phase": m.phase,
+        "home_score": m.home_score, "away_score": m.away_score
+    } for m in matches])
+
+@app.route('/api/player/<int:dorsal>', methods=['GET'])
+def get_player(dorsal):
+    player = Player.query.filter_by(dorsal=dorsal).first()
+    if player:
+        return jsonify({"name": player.name, "team": player.team})
+    return jsonify({"error": "No encontrado"}), 404
+
+@app.route('/api/predict', methods=['POST'])
+def save_prediction():
+    data = request.json
+    match = Match.query.get(data['match_id'])
     
-    # Aquí iría la lógica de guardado en DB
-    return jsonify({"mensaje": "Pronóstico guardado exitosamente"})
+    # REGLA: Bloqueo a la hora del partido
+    if datetime.now() >= match.date:
+        return jsonify({"error": "El partido ya comenzó"}), 403
+    
+    pred = Prediction.query.filter_by(user_id=data['user_id'], match_id=data['match_id']).first()
+    if not pred:
+        pred = Prediction(user_id=data['user_id'], match_id=data['match_id'])
+    
+    pred.home_pred = data['home_pred']
+    pred.away_pred = data['away_pred']
+    pred.dorsal_pred = data['dorsal_pred']
+    
+    db.session.add(pred)
+    db.session.commit()
+    return jsonify({"success": True})
 
-# --- MOTOR DE PUNTOS (Lógica de tus Reglas) ---
+# Iniciar base de datos con datos de prueba
+def seed():
+    if not Match.query.first():
+        m1 = Match(id='GA1', home='Argentina', away='México', phase='Grupos', date=datetime(2026, 6, 20, 16, 0))
+        p1 = Player(name='Lionel Messi', team='Argentina', dorsal=10)
+        u1 = User(username='admin', password='123', name='Admin', role='admin')
+        db.session.add_all([m1, p1, u1])
+        db.session.commit()
 
-def calcular_puntos(pred, real, fase):
-    p = 0
-    # Regla 5: Puntos por fase
-    esquema = {
-        'grupos': {'ex': 9, 'df': 6, 'gn': 3, 'z': 14},
-        '8vos':   {'ex': 12, 'df': 8, 'gn': 4, 'z': 18},
-        '4tos':   {'ex': 15, 'df': 10, 'gn': 5, 'z': 22},
-        'semi':   {'ex': 18, 'df': 12, 'gn': 6, 'z': 26},
-        '3ro':    {'ex': 21, 'df': 14, 'gn': 7, 'z': 30},
-        'final':  {'ex': 30, 'df': 20, 'gn': 10, 'z': 35}
-    }
-    f = esquema[fase]
-
-    # Regla 6: Caso 0-0
-    if pred.goles_a_p == 0 and pred.goles_b_p == 0:
-        if real.goles_a_real == 0 and real.goles_b_real == 0:
-            p += f['z']
-    else:
-        # Aciertos normales
-        if pred.goles_a_p == real.goles_a_real and pred.goles_b_p == real.goles_b_real:
-            p += f['ex']
-        elif (pred.goles_a_p - pred.goles_b_p) == (real.goles_a_real - real.goles_b_real):
-            p += f['df']
-        elif (pred.goles_a_p > pred.goles_b_p and real.goles_a_real > real.goles_b_real) or \
-             (pred.goles_a_p < pred.goles_b_p and real.goles_a_real < real.goles_b_real):
-            p += f['gn']
-
-    # Regla 7: Quien pasa
-    if fase != 'grupos' and pred.goles_a_p == pred.goles_b_p:
-        if pred.quien_pasa_p == real.quien_pasa_real:
-            p += 3
-            
-    return p
-
-# Crear la base de datos al arrancar
-if __name__ == "__main__":
+if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    # En Render usamos gunicorn, pero esto permite pruebas locales
+        seed()
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
-@app.route('/api/ranking')
-def obtener_ranking():
-    # Regla 8: Ordenar por Puntos desc, luego Exactos desc, luego Dif Gol desc.
-    usuarios_ordenados = Usuario.query.order_by(
-        Usuario.puntos.desc(), 
-        Usuario.exactos.desc(), 
-        Usuario.dif_gol.desc()
-    ).all()
-    
-    lista_ranking = []
-    for i, u in enumerate(usuarios_ordenados):
-        lista_ranking.append({
-            "pos": i + 1,
-            "nombre": u.nombre,
-            "puntos": u.puntos,
-            "exactos": u.exactos,
-            "dif_gol": u.dif_gol
-        })
-    return jsonify(lista_ranking)
