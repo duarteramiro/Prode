@@ -5,11 +5,11 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-# Configuración básica de base de datos
+# Configuración de base de datos para Render
 basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'prode.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = 'prode-2026-key'
+app.config['SECRET_KEY'] = 'prode2026-secure-key'
 
 db = SQLAlchemy(app)
 
@@ -36,7 +36,6 @@ class Player(db.Model):
 # --- RUTAS ---
 @app.route('/')
 def index():
-    # Esta línea busca el archivo dentro de la carpeta /templates
     return render_template('index.html')
 
 @app.route('/api/login', methods=['POST'])
@@ -45,7 +44,7 @@ def login():
     user = User.query.filter_by(username=data['username'], password=data['password']).first()
     if user:
         return jsonify({"id": user.id, "name": user.name, "role": user.role})
-    return jsonify({"error": "No válido"}), 401
+    return jsonify({"error": "Credenciales inválidas"}), 401
 
 @app.route('/api/matches', methods=['GET'])
 def get_matches():
@@ -55,18 +54,21 @@ def get_matches():
 @app.route('/api/player/<int:dorsal>', methods=['GET'])
 def get_player(dorsal):
     p = Player.query.filter_by(dorsal=dorsal).first()
-    return jsonify({"name": p.name}) if p else (jsonify({"error": "No hay"}), 404)
+    if p: return jsonify({"name": p.name})
+    return jsonify({"error": "No encontrado"}), 404
 
-# --- INICIALIZACIÓN (Clave para Render) ---
+# --- INICIALIZACIÓN FUERA DEL MAIN (Para Gunicorn) ---
 with app.app_context():
     db.create_all()
     if not User.query.filter_by(username='admin').first():
         db.session.add(User(username='admin', password='123', name='Admin Prode', role='admin'))
     if not Match.query.first():
+        # Agregamos un partido de prueba para ver algo al entrar
         db.session.add(Match(id='GA1', home='Argentina', away='México', phase='Grupos', date=datetime(2026, 6, 20, 16, 0)))
         db.session.add(Player(name='Lionel Messi', dorsal=10))
     db.session.commit()
 
+# Bloque para ejecución local
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
