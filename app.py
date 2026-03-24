@@ -5,15 +5,17 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-# Configuración de Base de Datos
+# --- CONFIGURACIÓN DE BASE DE DATOS ---
+# Esto crea el archivo prode.db en la misma carpeta del proyecto
 basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'prode.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = 'mundial2026-secret'
+app.config['SECRET_KEY'] = 'mundial2026-clave-secreta'
 
 db = SQLAlchemy(app)
 
-# --- MODELOS ---
+# --- MODELOS (TABLAS DE BASE DE DATOS) ---
+
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
@@ -23,13 +25,13 @@ class User(db.Model):
     points = db.Column(db.Integer, default=0)
 
 class Match(db.Model):
-    id = db.Column(db.String(20), primary_key=True)
+    id = db.Column(db.String(20), primary_key=True) # Ej: 'GA1'
     home = db.Column(db.String(50))
     away = db.Column(db.String(50))
     date = db.Column(db.DateTime)
     phase = db.Column(db.String(20))
-    home_score = db.Column(db.Integer, nullable=True)
-    away_score = db.Column(db.Integer, nullable=True)
+    home_score = db.Column(db.Integer, nullable=True) # Resultado real
+    away_score = db.Column(db.Integer, nullable=True) # Resultado real
 
 class Player(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -43,9 +45,10 @@ class Prediction(db.Model):
     match_id = db.Column(db.String(20), db.ForeignKey('match.id'))
     home_pred = db.Column(db.Integer)
     away_pred = db.Column(db.Integer)
-    dorsal_pred = db.Column(db.Integer)
+    dorsal_pred = db.Column(db.Integer, nullable=True)
 
-# --- RUTAS ---
+# --- RUTAS DE LA APLICACIÓN ---
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -56,7 +59,7 @@ def login():
     user = User.query.filter_by(username=data['username'], password=data['password']).first()
     if user:
         return jsonify({"id": user.id, "name": user.name, "role": user.role})
-    return jsonify({"error": "Credenciales inválidas"}), 401
+    return jsonify({"error": "Usuario o contraseña incorrectos"}), 401
 
 @app.route('/api/matches', methods=['GET'])
 def get_matches():
@@ -79,9 +82,9 @@ def save_prediction():
     data = request.json
     match = Match.query.get(data['match_id'])
     
-    # REGLA: Bloqueo a la hora del partido
+    # VALIDACIÓN: Bloqueo exacto a la hora del partido
     if datetime.now() >= match.date:
-        return jsonify({"error": "El partido ya comenzó"}), 403
+        return jsonify({"error": "Tiempo agotado. El partido ya comenzó."}), 403
     
     pred = Prediction.query.filter_by(user_id=data['user_id'], match_id=data['match_id']).first()
     if not pred:
@@ -95,30 +98,50 @@ def save_prediction():
     db.session.commit()
     return jsonify({"success": True})
 
-# Iniciar base de datos con datos de prueba
-def seed():
+@app.route('/api/admin/resultados', methods=['POST'])
+def carga_masiva():
+    data = request.json
+    for res in data['resultados']:
+        match = Match.query.get(res['id'])
+        if match:
+            match.home_score = res['goles_a']
+            match.away_score = res['goles_b']
+    db.session.commit()
+    return jsonify({"status": "Resultados oficiales actualizados"})
+
+# --- INICIALIZACIÓN DE DATOS (PARA RENDER) ---
+
+with app.app_context():
+    db.create_all()
+    
+    # 1. Crear Admin Inicial
+    if not User.query.filter_by(username='admin').first():
+        admin = User(username='admin', password='123', name='Admin Prode', role='admin')
+        db.session.add(admin)
+    
+    # 2. Crear Partidos de Prueba (puedes borrar esto cuando cargues los reales)
     if not Match.query.first():
-        m1 = Match(id='GA1', home='Argentina', away='México', phase='Grupos', date=datetime(2026, 6, 20, 16, 0))
-        p1 = Player(name='Lionel Messi', team='Argentina', dorsal=10)
-        u1 = User(username='admin', password='123', name='Admin', role='admin')
-        db.session.add_all([m1, p1, u1])
-        db.session.commit()
+        partidos_iniciales = [
+            Match(id='GA1', home='Argentina', away='México', phase='Grupos', date=datetime(2026, 6, 20, 16, 0)),
+            Match(id='GA2', home='España', away='Alemania', phase='Grupos', date=datetime(2026, 6, 21, 14, 0))
+        ]
+        db.session.add_all(partidos_iniciales)
+
+    # 3. Algunos jugadores para probar el buscador de dorsal
+    if not Player.query.first():
+        jugadores = [
+            Player(name='Lionel Messi', team='Argentina', dorsal=10),
+            Player(name='Julián Álvarez', team='Argentina', dorsal=9),
+            Player(name='Pedri', team='España', dorsal=8),
+            Player(name='Lamine Yamal', team='España', dorsal=19)
+        ]
+        db.session.add_all(jugadores)
+    
+    db.session.commit()
+
+# --- ARRANQUE DEL SERVIDOR ---
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        seed()
-    # Esto es para que funcione en Render usando el puerto que ellos asignan
+    # Render usa la variable de entorno PORT
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
-# --- INICIALIZACIÓN PARA RENDER ---
-with app.app_context():
-    db.create_all() # Crea las tablas si no existen
-    
-    # Crea el usuario admin si no existe
-    if not User.query.filter_by(username='admin').first():
-        admin_user = User(username='admin', password='123', name='Administrador', role='admin')
-        db.session.add(admin_user)
-        db.session.commit()
-
-# (Puedes borrar la función seed() anterior y el bloque if __name__ == '__main__':)
