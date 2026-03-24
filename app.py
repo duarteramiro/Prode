@@ -23,6 +23,9 @@ class User(db.Model):
 
 # RUTA PRINCIPAL
 @app.route('/')
+@app.route('/dashboard')
+def dashboard():
+    return render_template('dashboard.html')
 def index():
     return render_template('index.html')
 
