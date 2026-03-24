@@ -108,3 +108,22 @@ if __name__ == "__main__":
         db.create_all()
     # En Render usamos gunicorn, pero esto permite pruebas locales
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
+@app.route('/api/ranking')
+def obtener_ranking():
+    # Regla 8: Ordenar por Puntos desc, luego Exactos desc, luego Dif Gol desc.
+    usuarios_ordenados = Usuario.query.order_by(
+        Usuario.puntos.desc(), 
+        Usuario.exactos.desc(), 
+        Usuario.dif_gol.desc()
+    ).all()
+    
+    lista_ranking = []
+    for i, u in enumerate(usuarios_ordenados):
+        lista_ranking.append({
+            "pos": i + 1,
+            "nombre": u.nombre,
+            "puntos": u.puntos,
+            "exactos": u.exactos,
+            "dif_gol": u.dif_gol
+        })
+    return jsonify(lista_ranking)
