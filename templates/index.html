@@ -1,151 +1,49 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Prode Mundial 2026</title>
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-    <style>
-        /* Aquí va el CSS de tu archivo prode-mundial-2026_2.html */
-        :root { --gold: #C9A84C; --bg: #0a0f1e; --text: #f0f4ff; --surface: #1e2d45; --border: rgba(201,168,76,0.2); }
-        body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
-        .match-card { background: var(--surface); border: 1px solid var(--border); padding: 15px; border-radius: 12px; margin-bottom: 10px; max-width: 500px; }
-        .pred-input { width: 50px; text-align: center; background: #1a2235; border: 1px solid var(--gold); color: white; border-radius: 4px; padding: 5px; font-family: 'Bebas Neue'; font-size: 20px; }
-        .jersey-input { width: 60px; margin-left: 10px; }
-        .btn-save { background: var(--gold); border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 10px; }
-    </style>
-</head>
-<body>
-    <div id="login-area">
-        <h2>Ingresar</h2>
-        <input type="text" id="user" placeholder="Usuario">
-        <input type="password" id="pass" placeholder="Contraseña">
-        <button onclick="login()">Entrar</button>
-    </div>
-
-    <div id="main-content" style="display:none;">
-        <h1 id="welcome"></h1>
-        <div id="matches-container"></div>
-    </div>
-
-    <script>
-        // 1. Declaramos las variables globales ARRIBA DE TODO
-let currentUser = null; 
-
-async function login() {
-    console.log("Iniciando proceso de login...");
-    const userField = document.getElementById('user');
-    const passField = document.getElementById('pass');
-
-    if (!userField || !passField) {
-        console.error("No se encontraron los inputs de usuario o contraseña");
-        return;
-    }
-
-    const username = userField.value;
-    const password = passField.value;
-
-    try {
-        const res = await fetch('/api/login', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({username, password})
-        });
-
-        if (!res.ok) {
-            const errorData = await res.json();
-            alert("Error: " + (errorData.error || "Credenciales incorrectas"));
-            return;
-        }
-
-        const data = await res.json();
-        
-        // 2. Aquí asignamos los datos a la variable global que definimos arriba
-        currentUser = data; 
-        
-        console.log("Usuario logueado:", currentUser);
-
-        // 3. Cambiamos de pantalla
-        document.getElementById('login-area').style.display = 'none';
-        document.getElementById('main-content').style.display = 'block';
-        document.getElementById('welcome').innerText = `Hola, ${currentUser.name}`;
-        
-        // Cargamos los partidos
-        loadMatches();
-
-    } catch (err) {
-        console.error("Error en la conexión con el servidor:", err);
-        alert("No se pudo conectar con el servidor. Revisá que Render diga 'Live'.");
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prode Mundial 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* --- TU DISEÑO ORIGINAL (CSS) --- */
+:root {
+  --gold: #C9A84C; --gold-light: #F0D080; --gold-dark: #8B6914;
+  --bg: #0a0f1e; --bg2: #111827; --bg3: #1a2235;
+  --surface: #1e2d45; --surface2: #243552;
+  --border: rgba(201,168,76,0.2); --border2: rgba(201,168,76,0.4);
+  --text: #f0f4ff; --text2: #9aaac4;
+  --green: #22c55e; --red: #ef4444;
+  --radius: 12px; --radius-sm: 8px;
 }
-        let currentUser = null;
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; }
+h1,h2,h3,h4 { font-family: 'Bebas Neue', sans-serif; letter-spacing: 1px; }
 
-        async function login() {
-            const username = document.getElementById('user').value;
-            const password = document.getElementById('pass').value;
-            const res = await fetch('/api/login', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({username, password})
-            });
-            const data = await res.json();
-            if (data.id) {
-                currentUser = data;
-                document.getElementById('login-area').style.display = 'none';
-                document.getElementById('main-content').style.display = 'block';
-                document.getElementById('welcome').innerText = `Hola, ${data.name}`;
-                loadMatches();
-            } else { alert(data.error); }
-        }
+/* Login Screen */
+#login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg); }
+.login-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 20px; padding: 3rem 2.5rem; width: 100%; max-width: 420px; text-align: center; }
+.login-logo h1 { font-size: 42px; color: var(--gold); margin-bottom: 2rem; }
+.form-group { margin-bottom: 1.25rem; text-align: left; }
+.form-group label { display: block; font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 6px; text-transform: uppercase; }
+.form-group input { width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); padding: 10px 14px; font-size: 15px; outline: none; }
+.form-group input:focus { border-color: var(--gold); }
+.btn-primary { width: 100%; background: var(--gold); color: #0a0f1e; border: none; border-radius: var(--radius-sm); padding: 12px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 0.5rem; transition: background .2s; }
+.btn-primary:hover { background: var(--gold-light); }
 
-        async function loadMatches() {
-            const res = await fetch('/api/matches');
-            const matches = await res.json();
-            const container = document.getElementById('matches-container');
-            container.innerHTML = matches.map(m => `
-                <div class="match-card">
-                    <p>${m.phase} - ${new Date(m.date).toLocaleString()}</p>
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <span>${m.home}</span>
-                        <input type="number" id="h-${m.id}" class="pred-input">
-                        <span>vs</span>
-                        <input type="number" id="a-${m.id}" class="pred-input">
-                        <span>${m.away}</span>
-                    </div>
-                    <div style="margin-top:10px;">
-                        <label>Dorsal Jugador:</label>
-                        <input type="number" id="d-${m.id}" class="pred-input jersey-input" oninput="checkPlayer('${m.id}')">
-                        <span id="pname-${m.id}" style="font-size:12px; color:#C9A84C; margin-left:10px;"></span>
-                    </div>
-                    <button class="btn-save" onclick="savePrediction('${m.id}')">Guardar</button>
-                </div>
-            `).join('');
-        }
+/* Main App */
+header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0 1.5rem; display: flex; align-items: center; justify-content: space-between; height: 60px; }
+.logo { font-family: 'Bebas Neue'; font-size: 22px; color: var(--gold); letter-spacing: 2px; }
+.user-info { display: flex; align-items: center; gap: 12px; font-weight: 600; color: var(--gold); }
+main { padding: 1.5rem; max-width: 800px; margin: 0 auto; width: 100%; }
 
-        async function checkPlayer(id) {
-            const dorsal = document.getElementById(`d-${id}`).value;
-            if(!dorsal) return;
-            const res = await fetch(`/api/player/${dorsal}`);
-            const data = await res.json();
-            document.getElementById(`pname-${id}`).innerText = data.name || "No encontrado";
-        }
-
-        async function savePrediction(matchId) {
-            const payload = {
-                user_id: currentUser.id,
-                match_id: matchId,
-                home_pred: document.getElementById(`h-${matchId}`).value,
-                away_pred: document.getElementById(`a-${matchId}`).value,
-                dorsal_pred: document.getElementById(`d-${matchId}`).value
-            };
-            const res = await fetch('/api/predict', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(payload)
-            });
-            const data = await res.json();
-            if (data.success) alert("Guardado con éxito");
-            else alert(data.error);
-        }
-    </script>
-</body>
-</html>
+/* Match Cards */
+.match-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1rem; }
+.match-header { display: flex; justify-content: space-between; margin-bottom: 1rem; font-size: 12px; color: var(--text2); text-transform: uppercase; }
+.match-teams { display: flex; align-items: center; gap: 12px; justify-content: space-between; margin-bottom: 1rem; }
+.team-name { flex: 1; font-weight: 600; font-size: 16px; text-align: center; }
+.pred-input { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 8px; font-size: 18px; font-family: 'Bebas Neue'; text-align: center; width: 60px; outline: none; }
+.pred-input:focus { border-color: var(--gold); }
+.jersey-group { display: flex; gap: 10px; align-items: center; margin-top: 15px; background: var(--surface); padding: 10px; border-radius: 8px; }
+.jersey-group label { font-size: 12px; color: var(--text2); }
+.player-name-display { flex: 1; color: var(--
