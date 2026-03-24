@@ -3,213 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PRODE 2026 - Mundial de Fútbol</title>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <title>PRODE 2026</title>
     <style>
-        :root {
-            --bg: #0f172a;
-            --card-bg: #1e293b;
-            --gold: #d4af37;
-            --gold-hover: #b8962e;
-            --text: #f8fafc;
-            --input-bg: #334155;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'DM Sans', sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-
-        .login-card {
-            background-color: var(--card-bg);
-            padding: 2.5rem;
-            border-radius: 1rem;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-        }
-
-        .logo {
-            font-size: 3rem;
-            margin-bottom: 0.5rem;
-        }
-
-        h1 {
-            color: var(--gold);
-            font-size: 2.2rem;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            margin-bottom: 0.2rem;
-        }
-
-        p.subtitle {
-            color: #94a3b8;
-            font-size: 0.9rem;
-            margin-bottom: 2rem;
-        }
-
-        .form-group {
-            text-align: left;
-            margin-bottom: 1.5rem;
-        }
-
-        label {
-            display: block;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            margin-bottom: 0.5rem;
-            color: #94a3b8;
-            letter-spacing: 1px;
-        }
-
-        input {
-            width: 100%;
-            padding: 0.8rem 1rem;
-            border-radius: 0.5rem;
-            border: 1px solid #475569;
-            background-color: var(--input-bg);
-            color: white;
-            font-size: 1rem;
-            transition: border-color 0.3s;
-        }
-
-        input:focus {
-            outline: none;
-            border-color: var(--gold);
-        }
-
-        .btn-ingresar {
-            width: 100%;
-            padding: 1rem;
-            border: none;
-            border-radius: 0.5rem;
-            background-color: var(--gold);
-            color: var(--bg);
-            font-weight: bold;
-            font-size: 1.1rem;
-            cursor: pointer;
-            transition: background-color 0.3s, transform 0.1s;
-            margin-top: 1rem;
-        }
-
-        .btn-ingresar:hover {
-            background-color: var(--gold-hover);
-        }
-
-        .btn-ingresar:active {
-            transform: scale(0.98);
-        }
-
-        .footer-links {
-            margin-top: 1.5rem;
-            font-size: 0.9rem;
-            color: #94a3b8;
-        }
-
-        .footer-links a {
-            color: var(--gold);
-            text-decoration: none;
-            font-weight: bold;
-        }
-
-        .footer-links a:hover {
-            text-decoration: underline;
-        }
-
-        /* Estilo para mensajes de error */
-        #error-msg {
-            color: #ef4444;
-            font-size: 0.85rem;
-            margin-top: 1rem;
-            display: none;
-        }
+        body { font-family: sans-serif; background-color: #0f172a; color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .card { background: #1e293b; padding: 2rem; border-radius: 1rem; width: 350px; text-align: center; border: 1px solid #334155; }
+        h1 { color: #d4af37; margin-bottom: 1.5rem; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #475569; background: #334155; color: white; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #d4af37; border: none; border-radius: 5px; color: #0f172a; font-weight: bold; cursor: pointer; margin-top: 10px; }
     </style>
 </head>
 <body>
-
-    <div class="login-card">
-        <div class="logo">⚽</div>
+    <div class="card">
         <h1>PRODE 2026</h1>
-        <p class="subtitle">Mundial de Fútbol · Copa del Mundo</p>
-
-        <div class="form-group">
-            <label for="user">Usuario</label>
-            <input type="text" id="user" placeholder="Tu nombre de usuario">
-        </div>
-
-        <div class="form-group">
-            <label for="pass">Contraseña</label>
-            <input type="password" id="pass" placeholder="••••••••">
-        </div>
-
-        <button class="btn-ingresar" onclick="login()">Ingresar</button>
-        
-        <p id="error-msg">Usuario o contraseña incorrectos</p>
-
-        <div class="footer-links">
-            ¿No tenés cuenta? <a href="#">Registrarse</a>
-        </div>
+        <input type="text" id="user" placeholder="Usuario">
+        <input type="password" id="pass" placeholder="Contraseña">
+        <button onclick="login()">Ingresar</button>
     </div>
 
     <script>
         async function login() {
-            const userVal = document.getElementById('user').value;
-            const passVal = document.getElementById('pass').value;
-            const errorElement = document.getElementById('error-msg');
-
-            // Limpiar error previo
-            errorElement.style.display = 'none';
-
-            if (!userVal || !passVal) {
-                alert("Por favor, completa todos los campos.");
-                return;
-            }
+            const username = document.getElementById('user').value;
+            const password = document.getElementById('pass').value;
 
             try {
                 const response = await fetch('/api/login', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: userVal, password: passVal })
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username, password})
                 });
 
                 if (response.ok) {
-                    const data = await response.json();
-                    if (response.ok) {
-    const data = await response.json();
-    // Guardamos el ID del usuario para después
-    localStorage.setItem('userId', data.id); 
-    // ¡ESTA ES LA LÍNEA QUE TE HACE "AVANZAR"!
-    window.location.href = "/dashboard"; 
-}
-                    // Aquí podrías redirigir a la pantalla de partidos
-                    // window.location.href = "/dashboard"; 
+                    const user = await response.json();
+                    alert("¡Bienvenido " + user.name + "!");
+                    // ESTA LÍNEA ES LA QUE TE HACE ENTRAR AL TABLERO
+                    window.location.href = "/dashboard";
                 } else {
-                    errorElement.style.display = 'block';
+                    alert("Usuario o clave incorrectos");
                 }
-            } catch (err) {
-                console.error("Error en la conexión:", err);
+            } catch (error) {
                 alert("Hubo un problema al conectar con el servidor.");
             }
         }
-
-        // Permitir entrar con la tecla Enter
-        document.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                login();
-            }
-        });
     </script>
 </body>
 </html>
