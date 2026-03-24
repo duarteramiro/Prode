@@ -186,7 +186,13 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    alert("¡Bienvenido " + data.name + "!");
+                    if (response.ok) {
+    const data = await response.json();
+    // Guardamos el ID del usuario para después
+    localStorage.setItem('userId', data.id); 
+    // ¡ESTA ES LA LÍNEA QUE TE HACE "AVANZAR"!
+    window.location.href = "/dashboard"; 
+}
                     // Aquí podrías redirigir a la pantalla de partidos
                     // window.location.href = "/dashboard"; 
                 } else {
