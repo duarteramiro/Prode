@@ -23,11 +23,11 @@ class User(db.Model):
 
 # RUTA PRINCIPAL
 @app.route('/')
+def index():
+    return render_template('index.html')
 @app.route('/dashboard')
 def dashboard():
     return render_template('dashboard.html')
-def index():
-    return render_template('index.html')
 
 # RUTA DE LOGIN
 @app.route('/api/login', methods=['POST'])
