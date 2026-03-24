@@ -5,15 +5,15 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-# Configuración de base de datos para Render
+# Configuración robusta de la base de datos
 basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'prode.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = 'prode2026-secure-key'
+app.config['SECRET_KEY'] = 'clave-secreta-prode'
 
 db = SQLAlchemy(app)
 
-# --- MODELOS ---
+# MODELOS
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
@@ -21,54 +21,32 @@ class User(db.Model):
     name = db.Column(db.String(100))
     role = db.Column(db.String(10), default='user')
 
-class Match(db.Model):
-    id = db.Column(db.String(20), primary_key=True)
-    home = db.Column(db.String(50))
-    away = db.Column(db.String(50))
-    date = db.Column(db.DateTime)
-    phase = db.Column(db.String(20))
-
-class Player(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100))
-    dorsal = db.Column(db.Integer)
-
-# --- RUTAS ---
+# RUTA PRINCIPAL
 @app.route('/')
 def index():
     return render_template('index.html')
 
+# RUTA DE LOGIN
 @app.route('/api/login', methods=['POST'])
 def login():
-    data = request.json
-    user = User.query.filter_by(username=data['username'], password=data['password']).first()
-    if user:
-        return jsonify({"id": user.id, "name": user.name, "role": user.role})
-    return jsonify({"error": "Credenciales inválidas"}), 401
+    try:
+        data = request.json
+        user = User.query.filter_by(username=data['username'], password=data['password']).first()
+        if user:
+            return jsonify({"id": user.id, "name": user.name, "role": user.role})
+        return jsonify({"error": "Usuario o clave incorrectos"}), 401
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/matches', methods=['GET'])
-def get_matches():
-    matches = Match.query.all()
-    return jsonify([{"id": m.id, "home": m.home, "away": m.away, "date": m.date.isoformat(), "phase": m.phase} for m in matches])
-
-@app.route('/api/player/<int:dorsal>', methods=['GET'])
-def get_player(dorsal):
-    p = Player.query.filter_by(dorsal=dorsal).first()
-    if p: return jsonify({"name": p.name})
-    return jsonify({"error": "No encontrado"}), 404
-
-# --- INICIALIZACIÓN FUERA DEL MAIN (Para Gunicorn) ---
+# INICIALIZACIÓN FORZADA (Esto arregla el error 'no such table')
 with app.app_context():
     db.create_all()
     if not User.query.filter_by(username='admin').first():
-        db.session.add(User(username='admin', password='123', name='Admin Prode', role='admin'))
-    if not Match.query.first():
-        # Agregamos un partido de prueba para ver algo al entrar
-        db.session.add(Match(id='GA1', home='Argentina', away='México', phase='Grupos', date=datetime(2026, 6, 20, 16, 0)))
-        db.session.add(Player(name='Lionel Messi', dorsal=10))
-    db.session.commit()
+        admin = User(username='admin', password='123', name='Admin Prode', role='admin')
+        db.session.add(admin)
+        db.session.commit()
+        print("Base de datos y admin creados!")
 
-# Bloque para ejecución local
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
