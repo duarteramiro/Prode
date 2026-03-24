@@ -111,3 +111,14 @@ if __name__ == '__main__':
     # Esto es para que funcione en Render usando el puerto que ellos asignan
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
+# --- INICIALIZACIÓN PARA RENDER ---
+with app.app_context():
+    db.create_all() # Crea las tablas si no existen
+    
+    # Crea el usuario admin si no existe
+    if not User.query.filter_by(username='admin').first():
+        admin_user = User(username='admin', password='123', name='Administrador', role='admin')
+        db.session.add(admin_user)
+        db.session.commit()
+
+# (Puedes borrar la función seed() anterior y el bloque if __name__ == '__main__':)
