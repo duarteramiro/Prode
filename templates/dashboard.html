@@ -2,50 +2,18 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PRODE 2026 - Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <title>Tablero - PRODE 2026</title>
     <style>
-        body { font-family: 'DM Sans', sans-serif; background-color: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
-        .header { text-align: center; padding: 20px; border-bottom: 2px solid #d4af37; margin-bottom: 30px; }
-        .header h1 { color: #d4af37; text-transform: uppercase; margin: 0; }
-        .match-card { background: #1e293b; border-radius: 12px; padding: 20px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #334155; }
-        .team { font-weight: bold; font-size: 1.2rem; width: 40%; }
-        .vs { color: #d4af37; font-weight: bold; }
-        .score-input { width: 50px; padding: 8px; border-radius: 5px; border: 1px solid #475569; background: #334155; color: white; text-align: center; font-size: 1.1rem; }
-        .btn-save { background: #d4af37; color: #0f172a; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; display: block; margin: 20px auto; }
+        body { background-color: #0f172a; color: white; font-family: sans-serif; text-align: center; padding: 50px; }
+        h1 { color: #d4af37; }
+        .container { background: #1e293b; padding: 30px; border-radius: 15px; display: inline-block; }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>MIS PRONÓSTICOS</h1>
-        <p>Mundial 2026</p>
+    <div class="container">
+        <h1>¡Ya estás adentro!</h1>
+        <p>Próximamente verás aquí los partidos del Mundial 2026.</p>
+        <button onclick="window.location.href='/'" style="background: none; color: #d4af37; border: 1px solid #d4af37; padding: 10px; cursor: pointer; border-radius: 5px;">Cerrar Sesión</button>
     </div>
-
-    <div id="matches-container">
-        </div>
-
-    <script>
-        // Al cargar la página, traemos los partidos de la base de datos
-        async function loadMatches() {
-            const response = await fetch('/api/matches');
-            const matches = await response.json();
-            const container = document.getElementById('matches-container');
-
-            matches.forEach(m => {
-                const card = document.createElement('div');
-                card.className = 'match-card';
-                card.innerHTML = `
-                    <div class="team" style="text-align: right;">${m.home}</div>
-                    <input type="number" class="score-input" placeholder="0">
-                    <span class="vs">VS</span>
-                    <input type="number" class="score-input" placeholder="0">
-                    <div class="team">${m.away}</div>
-                `;
-                container.appendChild(card);
-            });
-        }
-        loadMatches();
-    </script>
 </body>
 </html>
