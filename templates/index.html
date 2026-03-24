@@ -28,6 +28,55 @@
     </div>
 
     <script>
+        // 1. Declaramos las variables globales ARRIBA DE TODO
+let currentUser = null; 
+
+async function login() {
+    console.log("Iniciando proceso de login...");
+    const userField = document.getElementById('user');
+    const passField = document.getElementById('pass');
+
+    if (!userField || !passField) {
+        console.error("No se encontraron los inputs de usuario o contraseña");
+        return;
+    }
+
+    const username = userField.value;
+    const password = passField.value;
+
+    try {
+        const res = await fetch('/api/login', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username, password})
+        });
+
+        if (!res.ok) {
+            const errorData = await res.json();
+            alert("Error: " + (errorData.error || "Credenciales incorrectas"));
+            return;
+        }
+
+        const data = await res.json();
+        
+        // 2. Aquí asignamos los datos a la variable global que definimos arriba
+        currentUser = data; 
+        
+        console.log("Usuario logueado:", currentUser);
+
+        // 3. Cambiamos de pantalla
+        document.getElementById('login-area').style.display = 'none';
+        document.getElementById('main-content').style.display = 'block';
+        document.getElementById('welcome').innerText = `Hola, ${currentUser.name}`;
+        
+        // Cargamos los partidos
+        loadMatches();
+
+    } catch (err) {
+        console.error("Error en la conexión con el servidor:", err);
+        alert("No se pudo conectar con el servidor. Revisá que Render diga 'Live'.");
+    }
+}
         let currentUser = null;
 
         async function login() {
